@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>城市生存游戏</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: #f2f2f2;
+    }
+    #gameContainer {
+      max-width: 700px;
+      margin: 0 auto;
+      padding: 1em;
+      background: #fff;
+      box-sizing: border-box;
+      min-height: 100vh;
+    }
+    h1, h2, h3 {
+      margin: 0.5em 0;
+    }
+    .panel {
+      border: 1px solid #ccc;
+      padding: 1em;
+      margin-bottom: 1em;
+      background: #fafafa;
+    }
+    .hidden {
+      display: none;
+    }
+    .choiceButton {
+      display: block;
+      width: 100%;
+      margin: 0.25em 0;
+      padding: 0.5em;
+      color: #fff;
+      background: #007bff;
+      border: none;
+      cursor: pointer;
+      font-size: 0.9em;
+    }
+    .choiceButton:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    .proceedButton {
+      padding: 0.5em;
+      border: none;
+      cursor: pointer;
+      background: #28a745;
+      color: #fff;
+    }
+    .restartButton {
+      background: #dc3545;
+      color: #fff;
+      padding: 0.5em;
+      border: none;
+      cursor: pointer;
+    }
+    .logPanel {
+      border: 1px solid #ccc;
+      padding: 0.5em;
+      max-height: 250px;
+      overflow-y: auto;
+      background: #f9f9f9;
+      font-size: 0.9em;
+    }
+    #introText {
+      font-style: italic;
+      margin-bottom: 1em;
+      background: #fcfcfc;
+      padding: 0.5em;
+      border-left: 4px solid #ccc;
+      line-height: 1.4em;
+    }
+    /* Styling for the status table */
+    #statusTable {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1em;
+    }
+    #statusTable th, #statusTable td {
+      border: 1px solid #ddd;
+      padding: 0.75em;
+      text-align: center;
+    }
+    #statusTable th {
+      background-color: #007bff;
+      color: white;
+      font-weight: bold;
+    }
+    #statusTable tr:nth-child(even) {
+      background-color: #f9f9f9;
+    }
+    #statusTable tr:hover {
+      background-color: #f1f1f1;
+    }
+
+    details#guideDetails{margin-bottom:1em;border:1px solid #ccc;background:#fafafa;}
+    details#guideDetails summary{cursor:pointer;font-weight:bold;padding:0.7em;background:#e9ecef;}
+    details#guideDetails[open] summary{border-bottom:1px solid #ccc;}
+    details#guideDetails .guideContent{padding:1em;background:#fcfcfc;line-height:1.6em;font-size:0.95em;}
+    details#guideDetails ul{margin:0 0 0 1.2em;padding:0;}
+    details#guideDetails li{margin:0.3em 0;}
+    @media(max-width:500px){
+      .choiceButton{font-size:0.8em;}
+      details#guideDetails .guideContent{font-size:0.9em;}
+    }
+  </style>
+</head>
+<body>
+  <div id="gameContainer">
+    <h1>城市生存游戏</h1>
+    <div id="introText">
+      在这个城市生存并不容易：你需要找工作、支付房租、保持健康，并通过魅力、智力、财商与体力不断提升自己。<br>
+      随着时间推移，你会慢慢变老，但你也将会获得更多的机遇与挑战！<br>
+      <b>目标：</b><br>
+      在 20 个事件后攒够两万元资金，在这座城市扎稳脚跟。<br>
+      在 40 个事件后攒够八万元资金，成家立业。<br>
+      在 60 个事件后攒够三十万元资金，功成名就、衣锦还乡。<br>
+    </div>
+
+    <div id="configPanel" class="panel">
+      <h2>开始游戏</h2>
+      <label for="difficultySelect">选择难度:</label>
+      <select id="difficultySelect">
+        <option value="">--选择--</option>
+        <option value="simple">简单</option>
+        <option value="medium">中等</option>
+        <option value="hard">困难</option>
+        <option value="guru">大师</option>
+      </select>
+      <p id="difficultyInfo"></p>
+      <button id="startButton" disabled>开始</button>
+    </div>
+
+    <div id="statusPanel" class="panel hidden">
+      <h3>角色状态</h3>
+      <table id="statusTable">
+        <thead>
+          <tr>
+            <th>资金</th>
+            <th>健康</th>
+            <th>职业</th>
+            <th>魅力</th>
+            <th>智力</th>
+            <th>财商</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td id="moneyStatus"></td>
+            <td id="healthStatus"></td>
+            <td id="jobStatus"></td>
+            <td id="charmStatus"></td>
+            <td id="intelligenceStatus"></td>
+            <td id="financeStatus"></td>
+          </tr>
+          <tr>
+            <th>体力</th>
+            <th>进度</th>
+            <th>房租</th>
+            <th>阶段健康成本</th>
+            <th>工资</th>
+            <th></th>
+          </tr>
+          <tr>
+            <td id="strengthStatus"></td>
+            <td id="progressStatus"></td>
+            <td id="rentDisplay"></td>
+            <td id="healthCostDisplay"></td>
+            <td id="jobPayDisplay"></td>
+            <td></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div id="eventPanel" class="panel hidden">
+      <h3 id="eventTitle"></h3>
+      <p id="eventDescription"></p>
+      <div id="choiceContainer"></div>
+      <button id="proceedButton" class="proceedButton hidden">继续</button>
+    </div>
+
+    <!-- <div id="milestonePanel" class="panel hidden">
+      <h3>阶段检查</h3>
+      <p id="milestoneMessage"></p>
+      <button id="milestoneProceedButton" class="proceedButton">进入下一阶段</button>
+    </div> -->
+
+    <div id="endPanel" class="panel hidden">
+      <h2>游戏结束</h2>
+      <p id="endMessage"></p>
+      <button id="restartButton" class="restartButton">重新开始</button>
+    </div>
+
+    <div id="logPanel" class="logPanel hidden">
+      <h3>行动记录</h3>
+      <div id="actionLog"></div>
+    </div>
+
+    <details id="guideDetails">
+      <summary>📖 玩家指南（点击展开 / 收起）</summary>
+      <div class="guideContent">
+        <h2>玩家指南 – 城市生存游戏</h2>
+
+        <h3>1. 游戏目标</h3>
+        <ul>
+          <li>在第&nbsp;20&nbsp;个事件时拥有<strong>≥ 2 万元</strong></li>
+          <li>在第&nbsp;40&nbsp;个事件时拥有<strong>≥ 8 万元</strong></li>
+          <li>在第&nbsp;60&nbsp;个事件时拥有<strong>≥ 30 万元</strong>（通关）</li>
+          <li>若<strong>资金</strong>或<strong>健康</strong>≤ 0，立即失败</li>
+        </ul>
+
+        <h3>2. 每回合流程</h3>
+        <ol>
+          <li>系统先结算当回合：
+            <ul>
+              <li>领取当前<strong>职业</strong>的<strong>工资</strong></li>
+              <li>支付<strong>房租</strong></li>
+              <li>扣除<strong>阶段健康成本</strong>及<strong>职业健康消耗</strong></li>
+            </ul>
+          </li>
+          <li>阅读事件内容</li>
+          <li>从若干<strong>选项</strong>中选择其一</li>
+          <li>查看结果后点击<span style="color:#28a745;">“继续”</span>进入下一事件</li>
+        </ol>
+
+        <h3>3. 如何开始游戏</h3>
+        <ol>
+          <li>点击「开始游戏」</li>
+          <li>选择<strong>难度</strong>：
+            <ul>
+              <li>简单&nbsp;→ 低房租 / 低健康消耗 / 初始能力高</li>
+              <li>中等</li>
+              <li>困难</li>
+              <li>大师&nbsp;→ 房租与消耗极高 / 初始能力极低</li>
+            </ul>
+          </li>
+          <li>系统随机分配四项<strong>能力值</strong>：
+            魅力、智力、财商、体力（难度越高，可分配总值越少）</li>
+        </ol>
+
+        <h3>4. 属性说明</h3>
+        <ul>
+          <li><strong>资金</strong>：用于里程碑与日常开销</li>
+          <li><strong>健康</strong> (0-100)：降到 0 判负</li>
+          <li><strong>魅力</strong>：提升社交类职业收入</li>
+          <li><strong>智力</strong>：随时间提高技术类职业收入</li>
+          <li><strong>财商</strong>：提升商业类职业收入，并减少这类职业的收入波动</li>
+          <li><strong>体力</strong>：提升体力类职业收入，并降低健康消耗</li>
+        </ul>
+
+        <h3>5. 职业与工资公式</h3>
+        <ul>
+          <li><strong>普通</strong>：工资≈基础 × (1 + 最高单项能力)</li>
+          <li><strong>社交</strong>：工资≈基础 × (1 + 5 × 魅力)</li>
+          <li><strong>技术</strong>：起薪=基础；每回合根据智力提升基础工资</li>
+          <li><strong>商业</strong>：工资在 <em>基础 × (1 + 3 × 财商)</em> 为中心的区间内波动</li>
+          <li><strong>体力</strong>：工资≈基础 × (1 + 3 × 体力)，且体力每回合+0.01</li>
+        </ul>
+        <p>更换职业只能通过事件选项获得<strong>新工作</strong>。</p>
+
+        <h3>6. 阶段与城市成本</h3>
+        <ul>
+          <li>事件&nbsp;1-20 → 阶段 1</li>
+          <li>事件 21-40 → 阶段 2</li>
+          <li>事件 41-60 → 阶段 3</li>
+          <li>阶段越高，<strong>房租</strong>与<strong>健康成本</strong>越高</li>
+        </ul>
+
+        <h3>7. 里程碑检查</h3>
+        <p>在第&nbsp;20&nbsp;和&nbsp;40&nbsp;个事件后进入<strong>里程碑面板</strong>：</p>
+        <ul>
+          <li>若资金达标 → 点击「进入下一阶段」继续</li>
+          <li>未达标 → 立即失败</li>
+        </ul>
+
+        <h3>8. 选项前置条件</h3>
+        <p>灰色按钮表示不满足该选项的最低 / 最高要求（资金、健康或能力值）。</p>
+
+        <h3>9. 结局</h3>
+        <ul>
+          <li>资金或健康 ≤ 0 → 「游戏结束」</li>
+          <li>存活至事件&nbsp;60 且资金 ≥ 30万→ 胜利通关</li>
+        </ul>
+
+        <h3>10. 快速技巧</h3>
+        <ul>
+          <li>优先选择与你<strong>最强能力</strong>相符的工作</li>
+          <li>时刻关注健康，尤其是在较高难度</li>
+        </ul>
+
+        <p style="text-align:center;font-style:italic;">祝你在城市闯出一番传奇！</p>
+      </div>
+    </details>
+  </div>
+
+  <script>
+    const sampleEvents=[
+      {"eventID":"1001","stage":1,"eventVersion":"E_pay_E_prob","eventDescription":"<placeholder>","choices":[{"choiceID":1,"choiceDescription":"<placeholder>","requirements":{},"moneyInfluence":[[1,"flat",-200]],"healthInfluence":[],"newJob":{"jobId":"208","jobName":"设计师","category":"technical","basePay":700,"baseHealthCost":2}},{"choiceID":2,"choiceDescription":"<placeholder>","requirements":{},"moneyInfluence":[[1,"flat",-200]],"healthInfluence":[],"newJob":{"jobId":"207","jobName":"裁缝","category":"technical","basePay":640,"baseHealthCost":2}},{"choiceID":3,"choiceDescription":"<placeholder>","requirements":{},"moneyInfluence":[[1,"flat",-200]],"healthInfluence":[]} ]},
+      {"eventID":"1002","stage":1,"eventVersion":"E_pay_E_prob","eventDescription":"<placeholder>","choices":[{"choiceID":1,"choiceDescription":"<placeholder>","requirements":{},"moneyInfluence":[],"healthInfluence":[],"newJob":{"jobId":"308","jobName":"供应链协调员","category":"commercial","basePay":700,"baseHealthCost":2}},{"choiceID":2,"choiceDescription":"<placeholder>","requirements":{},"moneyInfluence":[],"healthInfluence":[],"newJob":{"jobId":"206","jobName":"实验室助理","category":"technical","basePay":620,"baseHealthCost":2}},{"choiceID":3,"choiceDescription":"<placeholder>","requirements":{},"moneyInfluence":[],"healthInfluence":[]} ]}
+    ];
+
+    const stageCosts={
+      simple:{1:{rent:100,healthCost:0},2:{rent:200,healthCost:1},3:{rent:300,healthCost:2}, ini: 0.4, dText: '简单'},
+      medium:{1:{rent:200,healthCost:1},2:{rent:300,healthCost:2},3:{rent:400,healthCost:3}, ini: 0.3, dText: '中等'},
+      hard:{1:{rent:300,healthCost:2},2:{rent:500,healthCost:3},3:{rent:700,healthCost:4}, ini: 0.2, dText: '困难'},
+      guru:{1:{rent:500,healthCost:2},2:{rent:700,healthCost:4},3:{rent:1000,healthCost:6}, ini: 0.1, dText: '大师'}
+    };
+    const milestoneReqs={20:{requirement:20000,message:"你需要至少20000资金才能继续。"},40:{requirement:80000,message:"你需要至少80000资金才能继续。"},60:{requirement:300000,message:"你需要至少300000资金完成游戏！"}};
+
+    let thisEvents=sampleEvents.slice();
+    fetch('./events.json').then(r=>{if(!r.ok)throw 0;return r.json();}).then(d=>{thisEvents=d;}).catch(()=>{});
+
+    const defaultJob={jobId:"999",jobName:"无业",category:"normal",basePay:0,baseHealthCost:0};
+
+    let playerState={
+      money:5000,health:100,charmValue:0,intelligenceValue:0,financeValue:0,strengthValue:0,
+      currentJob:JSON.parse(JSON.stringify(defaultJob)),
+      originalTechBasePay:0,eventIndex:1,difficulty:"",stage:1
+    };
+
+    let actionLog=[],lockedChoice=false;
+    function logAction(m){actionLog.push(m);const a=document.getElementById("actionLog");if(a){const p=document.createElement("p");p.textContent=m;a.appendChild(p);}console.log(m);}
+    function clampHealth(){if(playerState.health>100)playerState.health=100;if(playerState.health<0)playerState.health=0;}
+
+    function randomStats(total){
+      const units=Math.round(total*100);           
+      const cuts=new Set();
+      while(cuts.size<3){cuts.add(Math.floor(Math.random()*(units+1)));}
+      const arr=[0,...Array.from(cuts).sort((a,b)=>a-b),units];
+      let parts=[];
+      for(let i=0;i<4;i++)parts.push(arr[i+1]-arr[i]);  
+      /* randomize the order */
+      for(let i=parts.length-1;i>0;i--){
+        const j=Math.floor(Math.random()*(i+1));
+        [parts[i],parts[j]]=[parts[j],parts[i]];
+      }
+      parts=parts.map(v=>Number((v/100).toFixed(2))); 
+      return {charm:parts[0],intel:parts[1],finance:parts[2],strength:parts[3]};
+    }
+
+    function pickRandomOutcome(arr,isMoney){
+      let r=Math.random(),c=0;
+      for(let it of arr){c+=it[0];if(r<=c){if(it[1]==="flat")return it[2];if(it[1]==="skillBased"&&isMoney){let s=playerState[it[2].skillTag]||0;return Math.floor(it[2].base*(1+it[2].multiplier*s));}return 0;}}
+      return 0;
+    }
+    function effectiveHC(raw){if (raw < 0) return Math.round(raw/(1+playerState.strengthValue)*10)/10; else return raw}
+
+    function getStageByEventIndex(i){return i<=20?1:i<=40?2:3;}
+
+    function applyJobAndStageCost(){
+      playerState.stage=getStageByEventIndex(playerState.eventIndex);
+      const c=stageCosts[playerState.difficulty][playerState.stage];
+      const job=playerState.currentJob;
+
+      let pay=0,cat=job.category;
+      if(cat==="普通"){let m=Math.max(playerState.charmValue,playerState.intelligenceValue,playerState.financeValue);pay=Math.floor(job.basePay*(1+m));}
+      else if(cat==="社交"){pay=Math.floor(job.basePay*(1+5*playerState.charmValue));}
+      else if(cat==="技术"){pay=Math.floor(job.basePay);job.basePay+=0.1*job.basePay*playerState.intelligenceValue;}
+      else if(cat==="商业"){let mult=1+3*playerState.financeValue,base=job.basePay*mult,fl=job.basePay/(1+playerState.financeValue);pay=Math.floor(base+(Math.random()*2*fl-fl));}
+      else if(cat==="体力"){pay=Math.floor(job.basePay*(1+3*playerState.strengthValue));playerState.strengthValue+=0.01;}
+      else pay=job.basePay;
+      playerState.money+=pay;
+
+      playerState.health-=effectiveHC(job.baseHealthCost+c.healthCost);
+      playerState.money-=c.rent;
+      clampHealth();
+      logAction(`工资结算完成，资金=${playerState.money}，健康=${playerState.health.toFixed(1)}`);
+      if(playerState.money<0||playerState.health<=0){endGame("资金或健康降到 0 以下");return false;}
+      return true;
+    }
+
+    function checkMilestone(){
+      if(milestoneReqs[playerState.eventIndex]){
+        const m=milestoneReqs[playerState.eventIndex];
+        if(playerState.money<m.requirement){endGame(`未满足里程碑：需要${m.requirement}`);return -1;}
+        document.getElementById("eventPanel").classList.add("hidden");
+        // document.getElementById("milestonePanel").classList.remove("hidden");
+        // document.getElementById("milestoneMessage").textContent=m.message;
+        return 1;
+      }
+      return 0;
+    }
+    // function proceedFromMilestone(){document.getElementById("milestonePanel").classList.add("hidden");nextEvent();}
+
+    // make sure for each stage, eventType from 1 to 3 each appear at least once, and eventType from 4 to 6 each appear at least twice
+    const base = [1, 2, 3, 4, 4, 5, 5, 6, 6]; const predeterminedSeq = [];
+    for (let i = 0; i < 3; i++) {predeterminedSeq.push([...base].sort(() => Math.random() - 0.5));}
+
+    function showEvent(){
+      if(!applyJobAndStageCost())return;
+      milestoneFlag = checkMilestone();
+
+      if (milestoneFlag===-1)return;
+
+      document.getElementById("eventPanel").classList.remove("hidden");
+      document.getElementById("proceedButton").classList.add("hidden");
+      lockedChoice=false;
+      updateUI();
+
+      let pool;
+      if(playerState.eventIndex===1){
+        pool=thisEvents.filter(e=>Number(e.stage)==1&&Number(e.eventType)==1);
+        // consider whether to constrain the pool when the player is jobless
+        if(pool.length===0)pool=thisEvents;
+      }else if(milestoneFlag==1){
+        pool=thisEvents.filter(e=>Number(e.eventID)>=4001+playerState.stage*100&&Number(e.eventID)<=4060+playerState.stage*100);
+      }else{
+        pool=thisEvents.filter(e=>e.stage===playerState.stage);
+        if (playerState.jobId === "999")           pool = pool.filter(e => e.eventType === 1 || e.eventType === 2 || e.eventType === 3 || e.eventType === 6); 
+        else if (playerState.eventIndex % 2 === 0) pool = pool.filter(e=>Number(e.eventType)==predeterminedSeq[playerState.stage-1][Math.floor((playerState.eventIndex-20*(playerState.stage-1))/2)-1]);
+      }
+      if(pool.length===0){
+        document.getElementById("eventTitle").textContent=`事件 #${playerState.eventIndex}`;
+        document.getElementById("eventDescription").textContent="暂无事件";
+        document.getElementById("choiceContainer").innerHTML="";
+        document.getElementById("proceedButton").classList.remove("hidden");
+        return;
+      }
+
+      const ev=pool[Math.floor(Math.random()*pool.length)];
+      document.getElementById("eventTitle").textContent=`事件 #${playerState.eventIndex} [${ev.eventID}]`;
+      document.getElementById("eventDescription").textContent=ev.eventDescription;
+
+      const cc=document.getElementById("choiceContainer");
+      cc.innerHTML="";
+      ev.choices.forEach(c=>{
+        const b=document.createElement("button");
+        b.className="choiceButton";
+        b.innerHTML=`选项${c.choiceID}: ${c.choiceDescription}`.replace(/\n/g,"<br>");
+        if(!meetsRequirement(c.requirements))b.disabled=true;
+        b.onclick=()=>{if(lockedChoice)return;lockedChoice=true;applyChoice(ev,c);};
+        cc.appendChild(b);
+      });
+    }
+
+    function meetsRequirement(req){
+      if(!req)return true;
+      const map={money:"money",health:"health",charm:"charmValue",intelligence:"intelligenceValue",finance:"financeValue",strength:"strengthValue"};
+      for (let k in req) {
+        const key = map[k] || k;
+        if (req[k].min !== undefined && playerState[key] < req[k].min) return false; // Inclusive lower bound
+        if (req[k].max !== undefined && playerState[key] > req[k].max) return false; // Inclusive upper bound
+      }
+
+      return true;
+    }
+
+    function applyChoice(ev,c){
+      let ch=[];
+      if(c.moneyInfluence){const m=pickRandomOutcome(c.moneyInfluence,true);if(m!==0){playerState.money+=m;ch.push(`资金${m>=0?"+":""}${m}`);}}
+      if(c.healthInfluence){const h=pickRandomOutcome(c.healthInfluence,false);if(h!==0){playerState.health+=h;clampHealth();ch.push(`健康值${h>=0?"+":""}${h}`);}}
+
+      if(c.charmInfluence){playerState.charmValue+=c.charmInfluence;ch.push(`魅力${c.charmInfluence >= 0 ? "+" : ""}${c.charmInfluence}`);}
+      if(c.intelligenceInfluence){playerState.intelligenceValue+=c.intelligenceInfluence;ch.push(`智力${c.intelligenceInfluence >= 0 ? "+" : ""}${c.intelligenceInfluence}`);}
+      if(c.financeInfluence){playerState.financeValue+=c.financeInfluence;ch.push(`财商${c.financeInfluence >= 0 ? "+" : ""}${c.financeInfluence}`);}
+      if(c.strengthInfluence){playerState.strengthValue+=c.strengthInfluence;ch.push(`体力${c.strengthInfluence >= 0 ? "+" : ""}${c.strengthInfluence}`);}
+
+      if(c.newJob){
+        const newJ=JSON.parse(JSON.stringify(c.newJob));
+        if(playerState.currentJob.category==="技术")playerState.currentJob.basePay=playerState.originalTechBasePay;
+        if(newJ.category==="技术")playerState.originalTechBasePay=newJ.basePay;
+        playerState.currentJob=newJ;
+        ch.push(`获得工作「${newJ.jobName}」`);
+      }
+
+      if(ch.length===0)ch.push("无变化");
+      document.getElementById("eventDescription").textContent="结果："+ch.join("，");
+      document.getElementById("choiceContainer").innerHTML="";
+      logAction(`事件${ev.eventID} 选${c.choiceID} | ${ch.join(" | ")} || 资金:${playerState.money} 健康:${playerState.health.toFixed(1)} 魅力:${playerState.charmValue.toFixed(2)} 智力:${playerState.intelligenceValue.toFixed(2)} 财商:${playerState.financeValue.toFixed(2)} 体力:${playerState.strengthValue.toFixed(2)}`);
+      if(playerState.money<0||playerState.health<=0){endGame("资金或健康降到 0 以下");return;}
+      document.getElementById("proceedButton").classList.remove("hidden");
+      updateUI();
+    }
+
+    function nextEvent(){playerState.eventIndex++;if(playerState.eventIndex>60){endGame("恭喜你完通关这一局！");return;}showEvent();}
+    function endGame(msg){
+      ["eventPanel","configPanel"].forEach(id=>document.getElementById(id).classList.add("hidden"));
+      document.getElementById("endPanel").classList.remove("hidden");
+      document.getElementById("endMessage").textContent=msg;
+      logAction("游戏结束: "+msg);
+    }
+
+    function updateUI(){
+      document.getElementById("moneyStatus").textContent=`${playerState.money}`;
+      document.getElementById("healthStatus").textContent=`${playerState.health.toFixed(1)}`;
+      document.getElementById("jobStatus").textContent=`${playerState.currentJob.jobName}`;
+      document.getElementById("charmStatus").textContent=`${playerState.charmValue.toFixed(2)}`;
+      document.getElementById("intelligenceStatus").textContent=`${playerState.intelligenceValue.toFixed(2)}`;
+      document.getElementById("financeStatus").textContent=`${playerState.financeValue.toFixed(2)}`;
+      document.getElementById("strengthStatus").textContent=`${playerState.strengthValue.toFixed(2)}`;
+      document.getElementById("progressStatus").textContent=`事件: ${playerState.eventIndex}/60 | 阶段: ${playerState.stage}`;
+
+      const c=stageCosts[playerState.difficulty][playerState.stage];
+      document.getElementById("rentDisplay").textContent=` ${c.rent}`;
+      document.getElementById("healthCostDisplay").textContent=` ${effectiveHC(c.healthCost+playerState.currentJob.baseHealthCost)}`;
+
+      let txt="暂无工作",cat=playerState.currentJob.category,j=playerState.currentJob;
+      if(j.jobId!=="999"){
+        if(cat==="体力")txt=`工资≈ ${Math.floor(j.basePay*(1+3*playerState.strengthValue))}，体力值每回合+0.01，工资随体力值增加`;
+        else if(cat==="社交")txt=`工资≈ ${Math.floor(j.basePay*(1+5*playerState.charmValue))}，工资大幅随魅力值增加`;
+        else if(cat==="技术")txt=`工资≈ ${Math.floor(j.basePay)}，工资逐渐增加，增幅与智力值相关`;
+        else if(cat==="商业"){let m=1+3*playerState.financeValue,b=j.basePay*m,f=j.basePay/(1+playerState.financeValue);txt=`工资范围 [${Math.floor(b-f)},${Math.floor(b+f)}]`; }
+        else{let mx=Math.max(playerState.charmValue,playerState.intelligenceValue,playerState.financeValue);txt=`工资≈ ${Math.floor(j.basePay*(1+mx))}，工资随当前最高能力值小幅增加`;}
+      }
+      document.getElementById("jobPayDisplay").textContent=txt;
+    }
+
+    document.getElementById("difficultySelect").onchange=function(){
+      const d=this.value,info=document.getElementById("difficultyInfo");
+      if(!d){info.textContent="";document.getElementById("startButton").disabled=true;return;}
+      const c1=stageCosts[d][1],c2=stageCosts[d][2],c3=stageCosts[d][3],stageIni=stageCosts[d].ini, dText=stageCosts[d].dText;
+      info.innerHTML=`难度: ${dText}<br>阶段1 租金${c1.rent} 健康消耗${c1.healthCost}<br>阶段2 租金${c2.rent} 健康消耗${c2.healthCost}<br>阶段3 租金${c3.rent} 健康消耗${c3.healthCost}<br>初始随机能力值：${stageIni}`;
+      document.getElementById("startButton").disabled=false;
+    };
+    document.getElementById("startButton").onclick=function(){
+      let diffSel=document.getElementById("difficultySelect").value;
+      let target=stageCosts[diffSel].ini;
+      let rnd=randomStats(target);
+      playerState={
+        money:5000,health:100,
+        charmValue:rnd.charm,intelligenceValue:rnd.intel,
+        financeValue:rnd.finance,strengthValue:rnd.strength,
+        currentJob:JSON.parse(JSON.stringify(defaultJob)),
+        originalTechBasePay:0,eventIndex:1,difficulty:diffSel,stage:1
+      };
+      actionLog=[];document.getElementById("actionLog").innerHTML="";
+      document.getElementById("configPanel").classList.add("hidden");
+      ["statusPanel","eventPanel","logPanel"].forEach(id=>document.getElementById(id).classList.remove("hidden"));
+      showEvent();
+    };
+    document.getElementById("proceedButton").onclick=nextEvent;
+    // document.getElementById("milestoneProceedButton").onclick=proceedFromMilestone;
+    document.getElementById("restartButton").onclick=function(){
+      document.getElementById("configPanel").classList.remove("hidden");
+      ["statusPanel","eventPanel","logPanel","endPanel","milestonePanel"].forEach(id=>document.getElementById(id).classList.add("hidden"));
+    };
+  </script>
+</body>
+</html>
